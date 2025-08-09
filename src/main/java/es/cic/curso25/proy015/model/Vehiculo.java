@@ -3,6 +3,7 @@ package es.cic.curso25.proy015.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -26,7 +27,7 @@ public class Vehiculo {
     @JoinColumn(name = "plaza_id")
     private Plaza plaza;
 
-    @OneToMany(mappedBy = "vehiculo")
+    @OneToMany(mappedBy = "vehiculo", cascade = CascadeType.ALL)
     private List<Multa> multas = new ArrayList<>();
 
     private int numPlazaAparcada;
@@ -41,6 +42,14 @@ public class Vehiculo {
     public void deleteMulta(Multa multa) {
         this.multas.remove(multa);
         multa.setVehiculo(null);
+    }
+
+    public Vehiculo() {
+    }
+
+    public Vehiculo(String color, TipoVehiculo tipoVehiculo) {
+        this.color = color;
+        this.tipoVehiculo = tipoVehiculo;
     }
 
     public Long getId() {
@@ -90,5 +99,36 @@ public class Vehiculo {
     public void setTipoVehiculo(TipoVehiculo tipoVehiculo) {
         this.tipoVehiculo = tipoVehiculo;
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((id == null) ? 0 : id.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Vehiculo other = (Vehiculo) obj;
+        if (id == null) {
+            if (other.id != null)
+                return false;
+        } else if (!id.equals(other.id))
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Vehiculo [color=" + color + ", plaza=" + plaza + ", tipoVehiculo=" + tipoVehiculo + "]";
+    }
+
 
 }

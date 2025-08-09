@@ -3,6 +3,7 @@ package es.cic.curso25.proy015.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -19,7 +20,7 @@ public class Plaza {
 
     private int numPlaza;
 
-    @OneToMany(mappedBy = "plaza")
+    @OneToMany(mappedBy = "plaza", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH, CascadeType.DETACH})
     private List<Vehiculo> vehiculos = new ArrayList<>();
 
     private boolean ocupada;
@@ -34,7 +35,7 @@ public class Plaza {
         vehiculo.setPlaza(null);
     }
 
-    public static int getMaxCoches() {
+    public static int getMaxVehiculos() {
         return MAX_COCHES;
     }
 
@@ -68,6 +69,36 @@ public class Plaza {
 
     public void setOcupada(boolean ocupada) {
         this.ocupada = ocupada;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((id == null) ? 0 : id.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Plaza other = (Plaza) obj;
+        if (id == null) {
+            if (other.id != null)
+                return false;
+        } else if (!id.equals(other.id))
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Plaza [numPlaza=" + numPlaza + ", ocupada=" + ocupada + "]";
     }
 
 }
