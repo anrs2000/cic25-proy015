@@ -75,7 +75,7 @@ public class GarajeService {
 
     public void verificarHuecosEnPlaza(Long idPlaza) {
         Plaza plaza = this.getPlaza(idPlaza);
-        if (!(Plaza.getMaxVehiculos() >= plaza.getVehiculos().size())) {
+        if (!(plaza.getVehiculos().size() < Plaza.getMaxVehiculos())) {
             throw new maxVehiculosException(String.format(
                     "No se puede asignar el vehiculo a la plaza %d porque está asociada al máximo de vehículos, %d",
                     idPlaza, Plaza.getMaxVehiculos()));
@@ -110,11 +110,14 @@ public class GarajeService {
 
         if (vehiculo.getPlaza() == null) {
             // Caso 1: El vehículo no tiene una plaza asignada.
-            LOGGER.info(String.format("El vehículo %s no tiene plaza asignada. Se procede a multar.", vehiculo.toString()));
+            LOGGER.info(
+                    String.format("El vehículo %s no tiene plaza asignada. Se procede a multar.", vehiculo.toString()));
             debeMultar = true;
-        } else if (!(vehiculo.getPlaza().getNumPlaza()==(vehiculo.getNumPlazaAparcada()))) {
+        } else if (!(vehiculo.getPlaza().getNumPlaza() == (vehiculo.getNumPlazaAparcada()))) {
             // Caso 2: El vehículo tiene plaza asignada, pero ha aparcado en la incorrecta.
-            LOGGER.info(String.format("El vehículo %s ha aparcado en una plaza que no le corresponde (en la plaza %d, cuando debería haber aparcado en la plaza %d). Se procede a multar.", vehiculo.toString(), vehiculo.getNumPlazaAparcada(), vehiculo.getPlaza().getNumPlaza()));
+            LOGGER.info(String.format(
+                    "El vehículo %s ha aparcado en una plaza que no le corresponde (en la plaza %d, cuando debería haber aparcado en la plaza %d). Se procede a multar.",
+                    vehiculo.toString(), vehiculo.getNumPlazaAparcada(), vehiculo.getPlaza().getNumPlaza()));
             debeMultar = true;
         }
 
