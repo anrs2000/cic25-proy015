@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import es.cic.curso25.proy015.exception.PlazaOcupadaException;
 import es.cic.curso25.proy015.exception.maxVehiculosException;
 import es.cic.curso25.proy015.model.Plaza;
 import es.cic.curso25.proy015.model.TipoVehiculo;
@@ -63,7 +64,6 @@ public class GarajeServiceTest {
         }
 
         vehiculo7 = garajeService.asociarVehiculoAPlaza(plaza2.getId(), vehiculo7);
-        assertTrue(true);
     }
 
     @Test
@@ -81,20 +81,34 @@ public class GarajeServiceTest {
         // Prueba 1: un coche no registrado (no tiene inicialmente ni ID ni plaza
         // asignada aparca en alguna plaza)
         garajeService.aparcar(plaza1.getId(), vehiculo6);
-        Vehiculo vehiculoDesdeBD = garajeService.getVehiculo(vehiculo6.getId());
+        Vehiculo vehiculoDesdeBD = garajeService.getVehiculoConMultas(vehiculo6.getId());
         assertEquals(1, vehiculoDesdeBD.getMultas().size());
 
-        // Prueba 2: un coche con plaza asignada aparca donde le corresponde
-        Vehiculo vehiculo7DesdeBD = garajeService.getVehiculo(vehiculo7.getId());
-        int multasInicialesVehiculo7 = vehiculo7DesdeBD.getMultas().size();
-        garajeService.aparcar(plaza2.getId(), vehiculo7);
-        vehiculo7DesdeBD = garajeService.getVehiculo(vehiculo7.getId());
-        assertEquals(multasInicialesVehiculo7, vehiculo7DesdeBD.getMultas().size());
+        // Desocupo la plaza para poder ocuparla por otro vehículo
+        garajeService.vaciarPlaza(plaza1.getId());
 
-        // Prueba 3: un coche con plaza asignada aparca donde no le corresponde
+        // Prueba 2: un coche con plaza asignada aparca donde no le corresponde
+        Vehiculo vehiculo7DesdeBD = garajeService.getVehiculoConMultas(vehiculo7.getId());
+        // int multasInicialesVehiculo7 = vehiculo7DesdeBD.getMultas().size();
         garajeService.aparcar(plaza1.getId(), vehiculo7);
-        vehiculo7DesdeBD = garajeService.getVehiculo(vehiculo7.getId());
-        assertEquals(multasInicialesVehiculo7 + 1, vehiculo7DesdeBD.getMultas().size());
-    }
+        vehiculo7DesdeBD = garajeService.getVehiculoConMultas(vehiculo7.getId());
+        assertEquals(1, vehiculo7DesdeBD.getMultas().size());
 
+        // Prueba 3: un coche con plaza asignada aparca donde le corresponde
+        // multasInicialesVehiculo7 = vehiculo7DesdeBD.getMultas().size();
+        garajeService.aparcar(plaza2.getId(), vehiculo7);
+        vehiculo7DesdeBD = garajeService.getVehiculoConMultas(vehiculo7.getId());
+        assertEquals(1, vehiculo7DesdeBD.getMultas().size());
+
+        // Prueba 4: un coche con una multa vuelve a ser multado
+        garajeService.aparcar(plaza1.getId(), vehiculo7);
+        vehiculo7DesdeBD = garajeService.getVehiculoConMultas(vehiculo7.getId());
+        assertEquals(2, vehiculo7DesdeBD.getMultas().size());
+
+        // Prueba 5: un coche intenta aparcar en una plaza que ya está ocupada
+        assertThrows(PlazaOcupadaException.class, () -> {
+            garajeService.aparcar(plaza1.getId(), new Vehiculo("morado", TipoVehiculo.CAMION));
+        });
+
+    }
 }
