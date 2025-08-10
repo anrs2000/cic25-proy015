@@ -3,6 +3,8 @@ package es.cic.curso25.proy015.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -28,6 +30,7 @@ public class Vehiculo {
     private Plaza plaza;
 
     @OneToMany(mappedBy = "vehiculo", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<Multa> multas = new ArrayList<>();
 
     private int numPlazaAparcada;

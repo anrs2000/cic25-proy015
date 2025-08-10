@@ -2,6 +2,8 @@ package es.cic.curso25.proy015.model;
 
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -18,6 +20,7 @@ public class Multa {
 
     @ManyToOne(optional = false)
     @JoinColumn
+    @JsonIgnore
     private Vehiculo vehiculo;
 
     private double precio;

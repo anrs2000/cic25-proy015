@@ -1,5 +1,7 @@
 package es.cic.curso25.proy015.service;
 
+import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -8,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import es.cic.curso25.proy015.exception.NotFoundException;
+import es.cic.curso25.proy015.exception.PlazaOcupadaException;
 import es.cic.curso25.proy015.exception.maxVehiculosException;
 import es.cic.curso25.proy015.model.Multa;
 import es.cic.curso25.proy015.model.Plaza;
@@ -36,12 +39,17 @@ public class GarajeService {
         if (vehiculo.isEmpty()) {
             throw new NotFoundException("No existe ningún vehículo con id " + id);
         }
-        vehiculo.get().getMultas().size();
+        // vehiculo.get().getMultas().size();
         return vehiculo.get();
     }
 
+    public Vehiculo getVehiculoConMultas(Long id) {
+        Vehiculo vehiculo = this.getVehiculo(id);
+        vehiculo.getMultas().size();
+        return vehiculo;
+    }
+
     public Plaza getPlaza(Long id) {
-        int numVehiculos = plazaRepository.findById(id).get().getVehiculos().size();
         Optional<Plaza> plaza = plazaRepository.findById(id);
         if (plaza.isEmpty()) {
             throw new NotFoundException("No existe ninguna plaza con id " + id);
@@ -50,8 +58,34 @@ public class GarajeService {
         // Accedemos a los vehículos de la plaza para evitar un error de
         // Lazyinitialization
         Plaza miPlaza = plaza.get();
-        numVehiculos = miPlaza.getVehiculos().size();
+        miPlaza.getVehiculos().size();
         return miPlaza;
+    }
+
+    public List<Plaza> getAllPlazas() {
+        return plazaRepository.findAll();
+    }
+
+    public Plaza getPlazaPorNum(int numPlaza) {
+        LOGGER.info(String.format("Buscando plaza con numPlaza %d", numPlaza));
+        boolean plazaEncontrada = false;
+        Plaza plazaBuscada = new Plaza();
+        Iterator<Plaza> iterador = this.getAllPlazas().iterator();
+        while (iterador.hasNext() && !plazaEncontrada) {
+            Plaza plazaActual = iterador.next();
+            if (plazaActual.getNumPlaza() == numPlaza) {
+                plazaBuscada = plazaActual;
+                plazaEncontrada = true;
+            }
+        }
+        if (!plazaEncontrada) {
+            throw new NotFoundException("No se ha encontrado ninguna plaza con el numPlaza " + numPlaza);
+        }
+        return plazaBuscada;
+    }
+
+    public List<Vehiculo> getAllVehiculos() {
+        return vehiculoRepository.findAll();
     }
 
     public Plaza crearPlaza(Plaza plaza) {
@@ -68,6 +102,11 @@ public class GarajeService {
         return nuevaPlaza;
     }
 
+    public void vaciarPlaza(Long idPlaza){
+        Plaza plaza = this.getPlaza(idPlaza);
+        plaza.setOcupada(false);
+    }
+
     public Vehiculo postVehiculo(Vehiculo vehiculo) {
         LOGGER.info(String.format("Guardando nuevo vehículo: %s", vehiculo));
         return vehiculoRepository.save(vehiculo);
@@ -75,7 +114,7 @@ public class GarajeService {
 
     public void verificarHuecosEnPlaza(Long idPlaza) {
         Plaza plaza = this.getPlaza(idPlaza);
-        if (!(Plaza.getMaxVehiculos() >= plaza.getVehiculos().size())) {
+        if (!(plaza.getVehiculos().size() < Plaza.getMaxVehiculos())) {
             throw new maxVehiculosException(String.format(
                     "No se puede asignar el vehiculo a la plaza %d porque está asociada al máximo de vehículos, %d",
                     idPlaza, Plaza.getMaxVehiculos()));
@@ -110,11 +149,14 @@ public class GarajeService {
 
         if (vehiculo.getPlaza() == null) {
             // Caso 1: El vehículo no tiene una plaza asignada.
-            LOGGER.info(String.format("El vehículo %s no tiene plaza asignada. Se procede a multar.", vehiculo.toString()));
+            LOGGER.info(
+                    String.format("El vehículo %s no tiene plaza asignada. Se procede a multar.", vehiculo.toString()));
             debeMultar = true;
-        } else if (!(vehiculo.getPlaza().getNumPlaza()==(vehiculo.getNumPlazaAparcada()))) {
+        } else if (!(vehiculo.getPlaza().getNumPlaza() == (vehiculo.getNumPlazaAparcada()))) {
             // Caso 2: El vehículo tiene plaza asignada, pero ha aparcado en la incorrecta.
-            LOGGER.info(String.format("El vehículo %s ha aparcado en una plaza que no le corresponde (en la plaza %d, cuando debería haber aparcado en la plaza %d). Se procede a multar.", vehiculo.toString(), vehiculo.getNumPlazaAparcada(), vehiculo.getPlaza().getNumPlaza()));
+            LOGGER.info(String.format(
+                    "El vehículo %s ha aparcado en una plaza que no le corresponde (en la plaza %d, cuando debería haber aparcado en la plaza %d). Se procede a multar.",
+                    vehiculo.toString(), vehiculo.getNumPlazaAparcada(), vehiculo.getPlaza().getNumPlaza()));
             debeMultar = true;
         }
 
@@ -131,7 +173,8 @@ public class GarajeService {
         Vehiculo vehiculoAMultar = this.getVehiculo(id);
         vehiculoAMultar.addMulta(multa);
         // vehiculoAMultar.getMultas().size();
-        return vehiculoRepository.save(vehiculoAMultar);
+        return vehiculoAMultar;
+        // return vehiculoRepository.save(vehiculoAMultar);
     }
 
     public Vehiculo aparcar(Long idPlaza, Vehiculo vehiculo) {
@@ -144,10 +187,59 @@ public class GarajeService {
 
         Long idVehiculo = vehiculo.getId();
 
-        // Asignamos el número de plaza aparcada al vehículo
+        //Revisamos si la plaza en la que se quiere aparcar está libre
+        comprobarPlazaVacia(idPlaza);
+
+        //En caso de que la plaza esté libre:
+        //1. Comprobamos si el coche estaba ya aparcado en alguna plaza
+        if(this.getVehiculo(idVehiculo).getNumPlazaAparcada() != 0){
+            int numPlaza = this.getVehiculo(idVehiculo).getNumPlazaAparcada();
+            Plaza plazaOcupada = this.getPlazaPorNum(numPlaza);
+            //Vaciamos la plaza en la que estaba aparcado el coche
+            plazaOcupada.setOcupada(false);
+        }
+
+        //2. Asignamos el número de plaza aparcada al vehículo
         vehiculo.setNumPlazaAparcada(plaza.getNumPlaza());
         vehiculoRepository.save(vehiculo);
 
+        //3. Y marcamos la plaza como ocupada
+        plaza.setOcupada(true);
+
         return comprobarPlazaCorrecta(idVehiculo);
     }
+
+    public void comprobarPlazaVacia(Long idPlaza) {
+        // Comprobamos que la plaza existe
+        Plaza plaza = this.getPlaza(idPlaza);
+        if (plaza.isOcupada()) {
+            Vehiculo vehiculo = buscarVehiculoAparcado(idPlaza);
+            throw new PlazaOcupadaException("La plaza está ocupada por el vehículo " + vehiculo.toString());
+        }
+    }
+
+    public Vehiculo buscarVehiculoAparcado(Long idPlaza) {
+        Plaza plaza = this.getPlaza(idPlaza);
+        List<Vehiculo> vehiculos = this.getAllVehiculos();
+        boolean encontrado = false;
+
+        Vehiculo miVehiculo = new Vehiculo();
+
+        Iterator<Vehiculo> iterador = vehiculos.iterator();
+        while (iterador.hasNext()) {
+            Vehiculo vehiculoActual = iterador.next();
+            if (vehiculoActual.getNumPlazaAparcada() == plaza.getNumPlaza()) {
+                miVehiculo = vehiculoActual;
+                encontrado = true;
+            }
+        }
+
+        if (!encontrado) {
+            throw new NotFoundException(
+                    "No se ha encontrado ningún vehículo aparcado en la plaza " + plaza.getNumPlaza());
+        }
+
+        return miVehiculo;
+    }
+
 }
