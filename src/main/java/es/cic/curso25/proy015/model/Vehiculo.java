@@ -1,5 +1,6 @@
 package es.cic.curso25.proy015.model;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +35,9 @@ public class Vehiculo {
     private List<Multa> multas = new ArrayList<>();
 
     private int numPlazaAparcada;
+
+    private LocalDate fechaAparcamiento;
+    private LocalDate fechaDesaparcar;
 
     private TipoVehiculo tipoVehiculo;
 
@@ -103,6 +107,22 @@ public class Vehiculo {
         this.tipoVehiculo = tipoVehiculo;
     }
 
+    public LocalDate getFechaAparcamiento() {
+        return fechaAparcamiento;
+    }
+
+    public void setFechaAparcamiento(LocalDate fechaAparcamiento) {
+        this.fechaAparcamiento = fechaAparcamiento;
+    }
+
+    public LocalDate getFechaDesaparcar() {
+        return fechaDesaparcar;
+    }
+
+    public void setFechaDesaparcar(LocalDate fechaDesaparcar) {
+        this.fechaDesaparcar = fechaDesaparcar;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -132,6 +152,5 @@ public class Vehiculo {
     public String toString() {
         return "Vehiculo [color=" + color + ", plaza=" + plaza + ", tipoVehiculo=" + tipoVehiculo + "]";
     }
-
 
 }

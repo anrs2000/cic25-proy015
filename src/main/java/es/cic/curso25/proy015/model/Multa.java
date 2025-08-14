@@ -27,6 +27,10 @@ public class Multa {
 
     private LocalDate fechaMaximaPago;
 
+    public Multa() {
+    }
+    
+
     public Long getId() {
         return id;
     }
