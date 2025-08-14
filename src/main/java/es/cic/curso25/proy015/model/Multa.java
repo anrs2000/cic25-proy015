@@ -27,6 +27,14 @@ public class Multa {
 
     private LocalDate fechaMaximaPago;
 
+    public Multa() {
+    }
+
+    public Multa(double precio){
+        this.precio = precio;
+        this.fechaMaximaPago = LocalDate.now().plusDays(30); // Asignamos una fecha máxima de pago 30 días después de la multa
+    }
+    
     public Long getId() {
         return id;
     }

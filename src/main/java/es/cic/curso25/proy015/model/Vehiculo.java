@@ -133,5 +133,4 @@ public class Vehiculo {
         return "Vehiculo [color=" + color + ", plaza=" + plaza + ", tipoVehiculo=" + tipoVehiculo + "]";
     }
 
-
 }
