@@ -1,8 +1,10 @@
 package es.cic.curso25.proy015.service;
 
+import java.time.LocalDate;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Scanner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,7 +104,7 @@ public class GarajeService {
         return nuevaPlaza;
     }
 
-    public void vaciarPlaza(Long idPlaza){
+    public void vaciarPlaza(Long idPlaza) {
         Plaza plaza = this.getPlaza(idPlaza);
         plaza.setOcupada(false);
     }
@@ -140,7 +142,7 @@ public class GarajeService {
         return vehiculoGuardado;
     }
 
-    public Vehiculo comprobarPlazaCorrecta(Long id) {
+    public Vehiculo comprobarPlazaCorrecta(Long id, int numDias) {
         LOGGER.info(String.format("Comprobando plaza correcta para vehiculo id %d", id));
         Vehiculo vehiculo = this.getVehiculo(id);
 
@@ -161,15 +163,27 @@ public class GarajeService {
         }
 
         if (debeMultar) {
-            vehiculo = this.multarVehiculo(id);
+            vehiculo = this.multarVehiculo(id, numDias);
         }
 
         return vehiculo;
     }
 
-    public Vehiculo multarVehiculo(Long id) {
+    public double calcularPrecioMulta(int numDias) {
+        return numDias * 5;
+    }
+
+    public Vehiculo multarVehiculo(Long id, int numDias) {
         LOGGER.info(String.format("Multando vehiculo con id %d", id));
-        Multa multa = new Multa();
+
+        // if (numDias <= 0) {
+        // throw new IllegalArgumentException("El número de días debe ser mayor que
+        // 0.");
+        // }
+
+        double precio = this.calcularPrecioMulta(numDias);
+
+        Multa multa = new Multa(precio);
         Vehiculo vehiculoAMultar = this.getVehiculo(id);
         vehiculoAMultar.addMulta(multa);
         // vehiculoAMultar.getMultas().size();
@@ -187,26 +201,54 @@ public class GarajeService {
 
         Long idVehiculo = vehiculo.getId();
 
-        //Revisamos si la plaza en la que se quiere aparcar está libre
+        // Revisamos si la plaza en la que se quiere aparcar está libre
         comprobarPlazaVacia(idPlaza);
 
-        //En caso de que la plaza esté libre:
-        //1. Comprobamos si el coche estaba ya aparcado en alguna plaza
-        if(this.getVehiculo(idVehiculo).getNumPlazaAparcada() != 0){
+        // En caso de que la plaza esté libre:
+        // 1. Comprobamos si el coche estaba ya aparcado en alguna plaza
+        if (this.getVehiculo(idVehiculo).getNumPlazaAparcada() != 0) {
             int numPlaza = this.getVehiculo(idVehiculo).getNumPlazaAparcada();
             Plaza plazaOcupada = this.getPlazaPorNum(numPlaza);
-            //Vaciamos la plaza en la que estaba aparcado el coche
+            // Vaciamos la plaza en la que estaba aparcado el coche
             plazaOcupada.setOcupada(false);
         }
 
-        //2. Asignamos el número de plaza aparcada al vehículo
+        // 2. Asignamos el número de plaza aparcada al vehículo
         vehiculo.setNumPlazaAparcada(plaza.getNumPlaza());
         vehiculoRepository.save(vehiculo);
 
-        //3. Y marcamos la plaza como ocupada
+        // 3. Y marcamos la plaza como ocupada
         plaza.setOcupada(true);
 
-        return comprobarPlazaCorrecta(idVehiculo);
+        return vehiculo;
+
+        // return comprobarPlazaCorrecta(idVehiculo);
+    }
+
+    public Vehiculo salir(Long idVehiculo, int numDias) {
+        Vehiculo vehiculo = this.getVehiculo(idVehiculo);
+
+        if (numDias <= 0) {
+            throw new IllegalArgumentException("El número de días debe ser mayor que 0.");
+        }
+
+        int numPlazaPreviamenteAparcada = vehiculo.getNumPlazaAparcada();
+        Plaza plaza = this.getPlazaPorNum(numPlazaPreviamenteAparcada);
+
+        // Comprobamos si el vehículo estaba aparcado en alguna plaza
+        if (numPlazaPreviamenteAparcada == 0) {
+            throw new NotFoundException("El vehículo no está aparcado en ninguna plaza.");
+        }
+
+        vehiculo = this.comprobarPlazaCorrecta(idVehiculo, numDias);
+
+        vehiculo.setNumPlazaAparcada(0);
+        vehiculoRepository.save(vehiculo);
+
+        // Y marcamos la plaza como libre
+        plaza.setOcupada(false);
+
+        return vehiculo;
     }
 
     public void comprobarPlazaVacia(Long idPlaza) {
